@@ -45,3 +45,54 @@ jspa-persistence_2.4.2_20120529
 
 
 
+
+
+#!/bin/sh
+
+#trim spaces around
+function trim()
+{
+  local var=$1
+	var="${var#"${var%%[![:space:]]*}"}" #remove leading whitespace characters
+	var="${var%"${var##*[![:space:]]}"}" #remove trailing whitespace characters
+	echo -n "$var"
+}
+
+#Initialize where all the sources will be exported to
+sources="sources"
+
+if [ -n "$1" ]; then
+	sources=$1
+fi
+
+echo "Starting code export...."
+echo "======================================"
+echo "Code will be exported to '"$sources"'."
+
+#Read releases to export
+input=export.releases
+echo "Reading release tags from file: "$input
+
+#Repository tags base on SVN
+repo_tags="http://integ:90/repos/RASP/tags/GA/" 
+
+#Start processing file line by line
+while read line
+do
+	#for each non empty line which is not a comment
+	if [ -n "$line" ] && [[ $line != \#* ]]; then
+		tag=$(trim $line)
+		release="$repo_tags$tag"
+		dest="$sources/$tag"
+		echo "Exporting : "$release" to dir: "$dest"..."
+		svn  export -q $release $dest
+		echo "Done."
+	fi
+done < "$input"
+
+#Tar and zip them sources up
+echo "Packaging "$sources"..."
+tar czf "$sources.tar.gz" $sources
+echo "Done."
+echo "======================================"
+echo "Export complete!"
